@@ -1,0 +1,9 @@
+# Base de datos con datos de estudiantes (menores de edad): NO se sube
+*.db
+# Generados / copias locales
+build/
+dist/
+__pycache__/
+*.bak*
+backup_pre_etapa4/
+*.log
