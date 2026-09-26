@@ -9,6 +9,10 @@ from contenido_primero import MODULOS_PRIMERO
 from contenido_segundo import MODULOS_SEGUNDO
 from contenido_tercero import MODULOS_TERCERO
 from contenido_mecanografia import FILAS_TECLADO, DEDO_COLOR, LECCIONES_MECANOGRAFIA
+import logging
+import traceback
+import seguridad
+import panel_docente
 
 # Número de módulos de Primero Básico (se calcula solo a partir del contenido).
 TOTAL_MODULOS_PRIMERO = len(MODULOS_PRIMERO)
@@ -93,6 +97,7 @@ def inicializar_bd():
             cursor.execute("ALTER TABLE estudiantes ADD COLUMN {} {}".format(col, definicion))
     conexion.commit()
     conexion.close()
+    seguridad.inicializar_seguridad()
 
 
 # =====================================================================================
@@ -516,6 +521,7 @@ class EncartaEducativaApp:
         self._navegando = False
 
         inicializar_bd()
+        self.limite_docente = seguridad.LimiteIntentos()
         self.crear_pantalla_bienvenida()
 
     def limpiar_ventana(self):
@@ -1020,7 +1026,7 @@ class EncartaEducativaApp:
         
         if not estudiantes:
             msg = "No hay estudiantes registrados en " + nombre_grado + ". Ingresa tu Nombre y Apellido:"
-            nombre = simpledialog.askstring("Nuevo Estudiante", msg)
+            nombre = self._pedir_nombre_valido("Nuevo Estudiante", msg, self.root)
             if nombre:
                 conexion = sqlite3.connect("encarta_educativa.db")
                 cursor = conexion.cursor()
@@ -1028,6 +1034,7 @@ class EncartaEducativaApp:
                 conexion.commit()
                 estudiante_id = cursor.lastrowid
                 conexion.close()
+                seguridad.registrar_evento("ESTUDIANTE_REGISTRADO", "id={} grado={}".format(estudiante_id, nivel))
                 self.estudiante_actual = (estudiante_id, nombre, nivel, 0)
                 self.mostrar_menu_principal()
             else:
@@ -1058,7 +1065,7 @@ class EncartaEducativaApp:
             btn_est.pack(fill="x", pady=5)
             
         def nuevo_estudiante():
-            nombre = simpledialog.askstring("Nuevo Estudiante", "Ingresa tu Nombre y Apellido:", parent=top)
+            nombre = self._pedir_nombre_valido("Nuevo Estudiante", "Ingresa tu Nombre y Apellido:", top)
             if nombre:
                 conexion = sqlite3.connect("encarta_educativa.db")
                 cursor = conexion.cursor()
@@ -1066,10 +1073,22 @@ class EncartaEducativaApp:
                 conexion.commit()
                 est_id = cursor.lastrowid
                 conexion.close()
+                seguridad.registrar_evento("ESTUDIANTE_REGISTRADO", "id={} grado={}".format(est_id, nivel))
                 self.asignar_estudiante(est_id, nombre, nivel, 0)
                 top.destroy()
                 
         tk.Button(top, text="+ Registrar Nuevo Estudiante", font=("Segoe UI", 10, "bold"), bg=self.secondary_color, fg="white", bd=0, padx=10, pady=8, command=nuevo_estudiante).pack(pady=15)
+
+    def _pedir_nombre_valido(self, titulo, mensaje, parent):
+        """Pide el nombre hasta que sea válido; devuelve None si se cancela."""
+        while True:
+            crudo = simpledialog.askstring(titulo, mensaje, parent=parent)
+            if crudo is None:
+                return None
+            ok, resultado = seguridad.validar_nombre(crudo)
+            if ok:
+                return resultado
+            messagebox.showwarning("Nombre no válido", resultado, parent=parent)
 
     def asignar_estudiante(self, est_id, nombre, grado, puntos):
         self.estudiante_actual = (est_id, nombre, grado, puntos)
@@ -3043,74 +3062,83 @@ class EncartaEducativaApp:
 
         tk.Button(top, text="✨ Completar Actividad y Ganar Puntos", font=("Segoe UI", 11, "bold"), bg=self.secondary_color, fg="white", bd=0, padx=15, pady=10, command=completar_actividad).pack(pady=20)
 
+    def _crear_password_docente(self):
+        """Primer uso: el docente define su contraseña (se guarda solo como hash con sal)."""
+        messagebox.showinfo("Primer acceso docente",
+                            "Aún no hay contraseña de docente. Crea una ahora "
+                            "(mínimo {} caracteres).".format(seguridad.MIN_LARGO_PASSWORD))
+        while True:
+            nueva = simpledialog.askstring("Crear contraseña", "Nueva contraseña del docente:", show="*")
+            if nueva is None:
+                return False
+            ok, msg = seguridad.validar_password_nueva(nueva)
+            if not ok:
+                messagebox.showwarning("Contraseña débil", msg)
+                continue
+            confirmar = simpledialog.askstring("Crear contraseña", "Repite la contraseña:", show="*")
+            if confirmar is None:
+                return False
+            if confirmar != nueva:
+                messagebox.showwarning("No coinciden", "Las contraseñas no coinciden. Intenta de nuevo.")
+                continue
+            seguridad.guardar_password_docente(nueva)
+            seguridad.registrar_evento("DOCENTE_PASSWORD_CREADA")
+            return True
+
     def abrir_panel_docente(self):
+        almacenado = seguridad.obtener_hash_docente()
+        if almacenado is None:
+            if self._crear_password_docente():
+                self.limite_docente.registrar_exito()
+                seguridad.registrar_evento("DOCENTE_LOGIN_OK", "tras crear contraseña")
+                self.mostrar_ventana_docente()
+            return
+        if self.limite_docente.bloqueado():
+            messagebox.showwarning("Acceso bloqueado", "Demasiados intentos. Espera {} segundos.".format(
+                self.limite_docente.segundos_restantes()))
+            seguridad.registrar_evento("DOCENTE_LOGIN_BLOQUEADO", "intento durante bloqueo", logging.WARNING)
+            return
         password = simpledialog.askstring("Acceso Docente", "Ingrese la contraseña del docente:", show="*")
-        if password == "admin123":
+        if password is None:
+            return
+        if seguridad.verificar_password(password, almacenado):
+            self.limite_docente.registrar_exito()
+            seguridad.registrar_evento("DOCENTE_LOGIN_OK")
             self.mostrar_ventana_docente()
-        elif password is not None:
-            messagebox.showerror("Error", "Contraseña incorrecta.")
+        else:
+            bloqueo = self.limite_docente.registrar_fallo()
+            seguridad.registrar_evento("DOCENTE_LOGIN_FALLIDO", "contraseña incorrecta", logging.WARNING)
+            if bloqueo:
+                seguridad.registrar_evento("DOCENTE_LOGIN_BLOQUEO_ACTIVADO",
+                                           "{} intentos fallidos; {} s".format(seguridad.MAX_INTENTOS,
+                                                                              seguridad.SEGUNDOS_BLOQUEO),
+                                           logging.ERROR)
+                messagebox.showerror("Acceso bloqueado", "Demasiados intentos. Espera {} segundos.".format(
+                    seguridad.SEGUNDOS_BLOQUEO))
+            else:
+                messagebox.showerror("Error", "Contraseña incorrecta.")
 
     def mostrar_ventana_docente(self):
-        doc_win = tk.Toplevel(self.root)
-        doc_win.title("Panel del Docente - Administración de Estudiantes")
-        doc_win.geometry("750x500")
-        doc_win.configure(bg=self.bg_color)
-        
-        tk.Label(doc_win, text="📊 Panel de Control Docente", font=("Segoe UI", 16, "bold"), bg=self.bg_color, fg=self.primary_color).pack(pady=15)
-        
-        frame_tabla = tk.Frame(doc_win, bg=self.bg_color)
-        frame_tabla.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        tree = ttk.Treeview(frame_tabla, columns=("ID", "Nombre", "Grado", "Puntos"), show="headings", height=12)
-        tree.heading("ID", text="ID")
-        tree.heading("Nombre", text="Nombre del Estudiante")
-        tree.heading("Grado", text="Grado")
-        tree.heading("Puntos", text="Puntos Totales")
-        
-        tree.column("ID", width=50, anchor="center")
-        tree.column("Nombre", width=300, anchor="w")
-        tree.column("Grado", width=120, anchor="center")
-        tree.column("Puntos", width=100, anchor="center")
-        
-        tree.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = ttk.Scrollbar(frame_tabla, orient="vertical", command=tree.yview)
-        scrollbar.pack(side="right", fill="y")
-        tree.configure(yscrollcommand=scrollbar.set)
-        
-        conexion = sqlite3.connect("encarta_educativa.db")
-        cursor = conexion.cursor()
-        cursor.execute("SELECT id, nombre, grado, puntos FROM estudiantes")
-        registros = cursor.fetchall()
-        conexion.close()
-        
-        grados_map = {1: "Primero Básico", 2: "Segundo Básico", 3: "Tercero Básico"}
-        for reg in registros:
-            tree.insert("", "end", values=(reg[0], reg[1], grados_map.get(reg[2], "Básico"), reg[3]))
-            
-        def reiniciar_progreso():
-            selected_item = tree.selection()
-            if not selected_item:
-                messagebox.showwarning("Atención", "Selecciona un estudiante de la lista para reiniciar su progreso.", parent=doc_win)
-                return
-            
-            item_data = tree.item(selected_item)
-            est_id = item_data['values'][0]
-            
-            if messagebox.askyesno("Confirmar", "¿Estás seguro de reiniciar el puntaje y progreso del estudiante?", parent=doc_win):
-                conexion = sqlite3.connect("encarta_educativa.db")
-                cursor = conexion.cursor()
-                cursor.execute("UPDATE estudiantes SET puntos = 0 WHERE id = ?", (est_id,))
-                cursor.execute("DELETE FROM progreso WHERE estudiante_id = ?", (est_id,))
-                conexion.commit()
-                conexion.close()
-                messagebox.showinfo("Éxito", "Progreso reiniciado correctamente.", parent=doc_win)
-                doc_win.destroy()
-                self.mostrar_ventana_docente()
+        """Toda la implementación del Panel del Docente vive en panel_docente.py
+        (gestión de estudiantes, progreso, reportes PDF y cambio de contraseña),
+        para no mezclar esa funcionalidad con las pantallas del estudiante."""
+        panel_docente.abrir(self)
 
-        tk.Button(doc_win, text="🔄 Reiniciar Progreso de Estudiante Seleccionado", font=("Segoe UI", 10), bg="#EF4444", fg="white", bd=0, padx=10, pady=8, command=reiniciar_progreso).pack(pady=15)
+def _manejar_error_inesperado(tipo, valor, tb):
+    """Detalle técnico solo al log; al usuario, un mensaje genérico (sin trazas ni SQL)."""
+    detalle = "".join(traceback.format_exception(tipo, valor, tb))
+    seguridad._obtener_logger().error("ERROR_INESPERADO | %s", detalle.replace("\n", " | "))
+    try:
+        messagebox.showerror("Ocurrió un problema",
+                             "Algo salió mal. Tu progreso guardado está a salvo.\n"
+                             "Si el problema continúa, avisa a tu docente.\n\n"
+                             "Código: {}".format(tipo.__name__))
+    except tk.TclError:
+        pass
+
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.report_callback_exception = _manejar_error_inesperado
     app = EncartaEducativaApp(root)
     root.mainloop()
