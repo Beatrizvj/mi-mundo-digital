@@ -805,11 +805,37 @@ class EncartaEducativaApp:
         cv.pack(side="left", fill="both", expand=True)
         sb.pack(side="right", fill="y")
 
+        def _rueda_meca(evento):
+            try:
+                if not cv.winfo_exists():
+                    self.root.unbind_all("<MouseWheel>")
+                    return
+                cv.yview_scroll(int(-1 * (evento.delta / 120)), "units")
+            except tk.TclError:
+                pass
+        self.root.bind_all("<MouseWheel>", _rueda_meca)
+
         columnas = 3
+        # --- Antes de los ejercicios: posición correcta de los dedos ---
+        guia = tk.Frame(gf, bg="white", bd=0, highlightthickness=2, highlightbackground="#F59E0B")
+        guia.grid(row=0, column=0, columnspan=columnas, padx=10, pady=(4, 12), sticky="nsew")
+        tk.Label(guia, text="👐 Antes de empezar: ¡así se colocan los dedos!", font=(self.font_family, 13, "bold"),
+                 bg="white", fg="#B45309").pack(pady=(10, 0))
+        cv_guia = tk.Canvas(guia, height=350, bg="white", highlightthickness=0)
+        cv_guia.pack(fill="x", padx=10)
+        cv_guia.bind("<Configure>", lambda e: self._dibujar_guia_manos(cv_guia))
+        cv_guia.after(40, lambda: self._dibujar_guia_manos(cv_guia))
+        tk.Label(guia, text=("•  Apoya tus dedos en la fila guía: mano izquierda  A S D F  ·  mano derecha  J K L Ñ.\n"
+                             "•  Los índices descansan en F y J (tienen una rayita en relieve para encontrarlas sin mirar). "
+                             "Los pulgares van sobre la barra espaciadora.\n"
+                             "•  Cada dedo tiene su color: escribe cada tecla con el dedo de su color y regresa a la fila guía."),
+                 font=(self.font_family, 10), bg="white", fg="#374151", justify="left", wraplength=860
+                 ).pack(padx=16, pady=(4, 12), anchor="w")
+
         for i, lec in enumerate(LECCIONES_MECANOGRAFIA):
             ppm, prec, comp = progreso.get(i, (0, 0, 0))
             desbloq = (i == 0) or progreso.get(i - 1, (0, 0, 0))[2]
-            fila, col = i // columnas, i % columnas
+            fila, col = i // columnas + 1, i % columnas
             borde = "#10B981" if comp else ("#F59E0B" if desbloq else "#9CA3AF")
             card = tk.Frame(gf, bg="white", bd=0, highlightthickness=2, highlightbackground=borde, highlightcolor=borde)
             card.grid(row=fila, column=col, padx=10, pady=10, sticky="nsew")
@@ -1034,6 +1060,83 @@ class EncartaEducativaApp:
         else:
             self._rect_redondeado(canvas, bx0, y, bx1, y + th, 8, fill="#E2E8F0", outline="")
             canvas.create_text((bx0 + bx1) // 2, y + th // 2, text="Espacio", font=(self.font_family, 10, "bold"), fill="#475569")
+
+    def _dibujar_guia_manos(self, canvas):
+        """Imagen de la posición correcta de las manos sobre el teclado (fila guía ASDF JKLÑ)."""
+        try:
+            canvas.delete("all")
+        except tk.TclError:
+            return
+        w = canvas.winfo_width()
+        if w < 300:
+            return
+        tw, th, gap = 46, 34, 5
+        paso_x, paso_y = tw + gap, th + gap
+        offsets = [0, 12, 22, 34]
+        y_kb = 150
+        x0 = max(10, (w - (10 * paso_x + offsets[3])) // 2)
+
+        def centro(fila, col):
+            return x0 + offsets[fila] + col * paso_x + tw // 2
+
+        # --- Teclado: la fila guía resaltada, el resto en tono suave ---
+        for r, fila in enumerate(FILAS_TECLADO):
+            for c, tecla in enumerate(fila):
+                kx = x0 + offsets[r] + c * paso_x
+                ky = y_kb + r * paso_y
+                color = DEDO_COLOR.get(tecla, "#CBD5E1")
+                if r == 2 and tecla in "ASDFJKLÑ":
+                    self._rect_redondeado(canvas, kx, ky, kx + tw, ky + th, 8, fill=color, outline="#1F2937", width=2)
+                    canvas.create_text(kx + tw // 2, ky + th // 2 - 2, text=tecla,
+                                       font=(self.font_family, 12, "bold"), fill="white")
+                    if tecla in "FJ":   # rayita en relieve que guía a los índices sin mirar
+                        canvas.create_line(kx + tw // 2 - 8, ky + th - 7, kx + tw // 2 + 8, ky + th - 7,
+                                           width=2, fill="#1F2937")
+                else:
+                    self._rect_redondeado(canvas, kx, ky, kx + tw, ky + th, 8,
+                                          fill=self._interp_color(color, "#FFFFFF", 0.62), outline="")
+                    canvas.create_text(kx + tw // 2, ky + th // 2, text=tecla,
+                                       font=(self.font_family, 10, "bold"), fill="#64748B")
+        y_esp = y_kb + 4 * paso_y
+        bx0, bx1 = x0 + 70, x0 + 10 * paso_x + offsets[3] - 70
+        self._rect_redondeado(canvas, bx0, y_esp, bx1, y_esp + th, 8, fill="#94A3B8", outline="#1F2937", width=2)
+        canvas.create_text((bx0 + bx1) // 2, y_esp + th // 2, text="Espacio",
+                           font=(self.font_family, 10, "bold"), fill="white")
+        y_guia = y_kb + 2 * paso_y
+        canvas.create_text((centro(2, 3) + centro(2, 6)) // 2, 104, text="Pulgares",
+                           font=(self.font_family, 8, "bold"), fill="#64748B")
+        canvas.create_text(x0 + offsets[2] + 10 * paso_x + 4, y_guia + th // 2, text="◀ Fila guía", anchor="w",
+                           font=(self.font_family, 9, "bold"), fill="#B45309")
+
+        # --- Manos: cada dedo con el color de su tecla guía y una flecha hasta ella ---
+        manos = [
+            ("Mano izquierda", [("Meñique", "A"), ("Anular", "S"), ("Medio", "D"), ("Índice", "F")], 0),
+            ("Mano derecha", [("Índice", "J"), ("Medio", "K"), ("Anular", "L"), ("Meñique", "Ñ")], 6),
+        ]
+        punta = {"Meñique": 112, "Anular": 124, "Medio": 130, "Índice": 122}   # alto de la punta de cada dedo
+        piel, piel_borde = "#FBD5B5", "#DFA877"
+        for titulo, dedos, col0 in manos:
+            xs = [centro(2, col0 + i) for i in range(4)]
+            canvas.create_text((xs[0] + xs[3]) // 2, 11, text=titulo, font=(self.font_family, 10, "bold"), fill="#1F2937")
+            self._rect_redondeado(canvas, xs[0] - 28, 22, xs[3] + 28, 90, 24, fill=piel, outline=piel_borde, width=2)
+            # Pulgar (hacia el centro del teclado, apuntando a la barra espaciadora)
+            if col0 == 0:
+                p0, p1 = (xs[3] + 6, 80), (xs[3] + 48, 126)
+            else:
+                p0, p1 = (xs[0] - 6, 80), (xs[0] - 48, 126)
+            canvas.create_line(*p0, *p1, width=26, capstyle="round", fill="#64748B")
+            canvas.create_line(*p0, *p1, width=22, capstyle="round", fill="#94A3B8")
+            canvas.create_line(p1[0], p1[1] + 13, p1[0], y_esp - 1, fill="#64748B", width=2, dash=(4, 3), arrow=tk.LAST)
+            # Cuatro dedos
+            for (nombre, tecla), x in zip(dedos, xs):
+                color = DEDO_COLOR[tecla]
+                oscuro = self._interp_color(color, "#000000", 0.35)
+                y_punta = punta[nombre]
+                canvas.create_text(x, 35, text=nombre, font=(self.font_family, 8), fill="#7C4A21")
+                canvas.create_line(x, y_punta + 14, x, y_guia - 2, fill=oscuro, width=2, dash=(4, 3), arrow=tk.LAST)
+                canvas.create_line(x, 58, x, y_punta, width=28, capstyle="round", fill=oscuro)
+                canvas.create_line(x, 58, x, y_punta, width=24, capstyle="round", fill=color)
+                canvas.create_text(x, y_punta, text=tecla, font=(self.font_family, 11, "bold"), fill="white")
 
     def seleccionar_grado(self, nivel, nombre_grado):
         self.grado_actual = (nivel, nombre_grado)
