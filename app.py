@@ -13,6 +13,14 @@ import logging
 import traceback
 import seguridad
 import panel_docente
+import os
+import sys
+
+
+def ruta_recurso(nombre):
+    """Ruta de un archivo incluido con la app (funciona con python app.py y dentro del .exe)."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, nombre)
 
 # Número de módulos de Primero Básico (se calcula solo a partir del contenido).
 TOTAL_MODULOS_PRIMERO = len(MODULOS_PRIMERO)
@@ -514,6 +522,10 @@ class EncartaEducativaApp:
         self.grado_actual = None
         self.estudiante_actual = None
         self._meca_perfil = None   # nombre del practicante del curso de mecanografía
+        try:
+            self._logo_img = tk.PhotoImage(file=ruta_recurso("logo_ineb.png"))
+        except tk.TclError:
+            self._logo_img = None   # sin logo, la app funciona igual
 
         # Historial de navegación (botones ← →)
         self._historial = []
@@ -688,6 +700,14 @@ class EncartaEducativaApp:
             canvas.delete("all")
             self._gradiente_vertical(canvas, w, h, "#4F46E5", "#7C3AED")
             self._flechas_nav(canvas, 24, 42)   # ← → navegación (arriba a la izquierda)
+            # Logo institucional (arriba a la derecha, sobre una tarjeta blanca)
+            if self._logo_img is not None:
+                lw, lh = self._logo_img.width(), self._logo_img.height()
+                lx = w - lw - 24 - 8; ly = 20
+                self._rect_redondeado(canvas, lx - 8 + 4, ly - 8 + 6, lx + lw + 8 + 4, ly + lh + 8 + 6, 16,
+                                       fill=self._interp_color("#4F46E5", "#000000", 0.3), outline="")
+                self._rect_redondeado(canvas, lx - 8, ly - 8, lx + lw + 8, ly + lh + 8, 16, fill="white", outline="")
+                canvas.create_image(lx, ly, image=self._logo_img, anchor="nw")
             cx = w // 2
             oy = max(0, (h - 660) // 2)   # centra verticalmente el bloque
             canvas.create_text(cx, 60 + oy, text="🌐  MI MUNDO DIGITAL",
