@@ -13,6 +13,7 @@ import logging
 import traceback
 import seguridad
 import panel_docente
+import inicio_animado
 import os
 import sys
 
@@ -665,6 +666,8 @@ class EncartaEducativaApp:
 
         canvas = tk.Canvas(self.root, bg=self.primary_dark, highlightthickness=0)
         canvas.pack(fill="both", expand=True)
+        encabezado = inicio_animado.EncabezadoInicio(self, canvas, "#4F46E5", "#7C3AED")
+        self._encabezado_inicio = encabezado   # evita que se libere mientras la pantalla está activa
 
         cards = [
             ("PRIMERO", "🌐", "#3B82F6", 1, "Fundamentos digitales"),
@@ -705,14 +708,12 @@ class EncartaEducativaApp:
                 canvas.create_image(w - 14, 8, image=self._logo_img, anchor="ne")
             cx = w // 2
             oy = max(0, (h - 660) // 2)   # centra verticalmente el bloque
-            canvas.create_text(cx, 60 + oy, text="🌐  MI MUNDO DIGITAL",
-                               font=(self.font_family, 30, "bold"), fill="white")
-            canvas.create_text(cx, 100 + oy, text="Aprende computación, lógica y programación… ¡jugando!",
-                               font=(self.font_family, 13), fill="#E0E7FF")
-            canvas.create_text(cx, 150 + oy, text="Elige tu grado para comenzar",
-                               font=(self.font_family, 14, "bold"), fill="white")
             cw, ch, gap = 216, 252, 34
             total = len(cards) * cw + (len(cards) - 1) * gap
+            # Título animado, subtítulo, astronauta y destellos (solo presentación: ver inicio_animado.py)
+            encabezado.dibujar(w, h, oy, cx - total // 2)
+            canvas.create_text(cx, 150 + oy, text="Elige tu grado para comenzar",
+                               font=(self.font_family, 14, "bold"), fill="white")
             x = cx - total // 2; y = 186 + oy
             for (nombre, icono, color, nivel, desc) in cards:
                 tarjeta(x, y, cw, ch, nombre, icono, color, nivel, desc)
@@ -747,6 +748,7 @@ class EncartaEducativaApp:
 
         canvas.bind("<Configure>", dibujar)
         canvas.after(60, dibujar)
+        canvas.after(80, encabezado.iniciar)
 
     # =================================================================================
     #  CURSO DE MECANOGRAFÍA (estilo MecaNet)
