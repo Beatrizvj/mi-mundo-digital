@@ -1152,8 +1152,14 @@ class EncartaEducativaApp:
                 canvas.create_text(x, y_palma + 30, text=nombre, font=(self.font_family, 8, "bold"), fill="#5B3A1E")
             canvas.create_text((xs[0] + xs[3]) // 2, y_palma_fin + 14, text=titulo,
                                font=(self.font_family, 10, "bold"), fill="#1F2937")
-        canvas.create_text(cx_teclado, y_palma + 30, text="Pulgares sobre", font=(self.font_family, 8, "bold"), fill="#64748B")
-        canvas.create_text(cx_teclado, y_palma + 44, text="la barra espaciadora", font=(self.font_family, 8, "bold"), fill="#64748B")
+        for i, linea in enumerate(("Pulgares sobre", "la barra", "espaciadora")):
+            canvas.create_text(cx_teclado, y_palma + 20 + i * 13, text=linea,
+                               font=(self.font_family, 8, "bold"), fill="#64748B")
+        # Letras de la fila guía por encima de las puntas de los dedos (para que sigan leyéndose)
+        for c, tecla in enumerate(FILAS_TECLADO[2]):
+            if tecla in "ASDFJKLÑ":
+                canvas.create_text(centro(2, c), y_guia + th // 2 - 2, text=tecla,
+                                   font=(self.font_family, 12, "bold"), fill="#111827")
 
     def seleccionar_grado(self, nivel, nombre_grado):
         self.grado_actual = (nivel, nombre_grado)
