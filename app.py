@@ -700,14 +700,9 @@ class EncartaEducativaApp:
             canvas.delete("all")
             self._gradiente_vertical(canvas, w, h, "#4F46E5", "#7C3AED")
             self._flechas_nav(canvas, 24, 42)   # ← → navegación (arriba a la izquierda)
-            # Logo institucional (arriba a la derecha, sobre una tarjeta blanca)
+            # Logo institucional (arriba a la derecha, sin fondo: el PNG ya trae borde blanco y sombra suave)
             if self._logo_img is not None:
-                lw, lh = self._logo_img.width(), self._logo_img.height()
-                lx = w - lw - 24 - 8; ly = 20
-                self._rect_redondeado(canvas, lx - 8 + 4, ly - 8 + 6, lx + lw + 8 + 4, ly + lh + 8 + 6, 16,
-                                       fill=self._interp_color("#4F46E5", "#000000", 0.3), outline="")
-                self._rect_redondeado(canvas, lx - 8, ly - 8, lx + lw + 8, ly + lh + 8, 16, fill="white", outline="")
-                canvas.create_image(lx, ly, image=self._logo_img, anchor="nw")
+                canvas.create_image(w - 14, 8, image=self._logo_img, anchor="ne")
             cx = w // 2
             oy = max(0, (h - 660) // 2)   # centra verticalmente el bloque
             canvas.create_text(cx, 60 + oy, text="🌐  MI MUNDO DIGITAL",
