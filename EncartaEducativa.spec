@@ -5,7 +5,7 @@ a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo_ineb.png', '.'), ('astronauta_96.png', '.'), ('astronauta_128.png', '.'), ('astronauta_160.png', '.'), ('astronauta_192.png', '.'), ('astronauta_224.png', '.')],
+    datas=[('icono.ico', '.'), ('logo_ineb.png', '.'), ('astronauta_96.png', '.'), ('astronauta_128.png', '.'), ('astronauta_160.png', '.'), ('astronauta_192.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['icono.ico'],
 )

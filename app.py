@@ -505,6 +505,10 @@ class EncartaEducativaApp:
     def __init__(self, root):
         self.root = root
         self.root.title("MI MUNDO DIGITAL")
+        try:
+            self.root.iconbitmap(default=ruta_recurso("icono.ico"))   # icono de la ventana y de las ventanas hijas
+        except tk.TclError:
+            pass   # sin icono la app funciona igual
         self.root.geometry("1040x720")
         self.root.minsize(880, 620)
 
