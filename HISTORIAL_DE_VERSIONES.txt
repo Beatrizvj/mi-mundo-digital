@@ -1,0 +1,95 @@
+e682a82 2026-10-09 Reiniciar progreso restablece todo (puntos, XP, racha, insignias, actividades); pruebas del Panel del Docente
+
+ panel_docente.py      | 10 ++++++++--
+ test_panel_docente.py | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+), 2 deletions(-)
+c5ace2d 2026-10-09 Corrige la altura del laberinto y los emojis en los reportes PDF
+
+ app.py           |    2 +-
+ panel_docente.py | 1289 +++++++++++++++++++++++++++---------------------------
+ 2 files changed, 647 insertions(+), 644 deletions(-)
+16719c4 2026-10-03 Icono .ico de la aplicación y del ejecutable
+
+ EncartaEducativa.spec |   3 ++-
+ app.py                |   4 ++++
+ icono.ico             | Bin 0 -> 170046 bytes
+ 3 files changed, 6 insertions(+), 1 deletion(-)
+94f0b6e 2026-10-03 README: instalación, uso y estructura del proyecto
+
+ README.md | 163 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 163 insertions(+)
+ae2e658 2026-10-03 Pantalla de inicio animada con astronauta y título mejorado
+
+ app.py             |  14 ++-
+ astronauta_128.png | Bin 0 -> 32236 bytes
+ astronauta_160.png | Bin 0 -> 46175 bytes
+ astronauta_192.png | Bin 0 -> 61784 bytes
+ astronauta_96.png  | Bin 0 -> 19839 bytes
+ inicio_animado.py  | 333 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 341 insertions(+), 6 deletions(-)
+69bb792 2026-10-03 Logo sin fondo en la pantalla principal
+
+ app.py        |   9 ++-------
+ logo_ineb.png | Bin 18509 -> 32644 bytes
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+8f23cda 2026-10-03 Mecanografía: manos más realistas con el dedo de cada tecla; nuevo logo del INEB
+
+ app.py                  | 117 +++++++++++++++++++++++++++++++-----------------
+ logo_ineb.png           | Bin 18507 -> 18509 bytes
+ logo_nuevo_completo.png | Bin 0 -> 462610 bytes
+ 3 files changed, 76 insertions(+), 41 deletions(-)
+d52c510 2026-10-03 Mecanografía: ajuste de la ilustración de las manos
+
+ app.py | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+c582078 2026-10-03 Mecanografía: las manos se dibujan debajo del teclado
+
+ app.py | 71 +++++++++++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 44 insertions(+), 27 deletions(-)
+f7b7309 2026-10-03 Mecanografía: imagen de la posición correcta de los dedos antes de los ejercicios
+
+ app.py | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 104 insertions(+), 1 deletion(-)
+ddb66fa 2026-10-03 Logo del INEB en la pantalla principal
+
+ EncartaEducativa.spec |  76 +++++++++++++++++++++++++-------------------------
+ app.py                |  20 +++++++++++++
+ logo_ineb.png         | Bin 0 -> 18507 bytes
+ 3 files changed, 58 insertions(+), 38 deletions(-)
+7ac1960 2026-10-01 Panel del Docente: estudiantes por grado, progreso y reportes PDF (individual, por grado y general)
+
+ panel_docente.py | 643 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ pdf_simple.py    | 174 +++++++++++++++
+ 2 files changed, 817 insertions(+)
+464bfae 2026-09-26 Endurecimiento de seguridad: contraseña con PBKDF2, bloqueo por intentos, validación de nombres, bitácora y 13 pruebas
+
+ app.py            | 152 +++++++++++++++++++++++++++++---------------------
+ seguridad.py      | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ test_seguridad.py | 105 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 359 insertions(+), 62 deletions(-)
+3536fd1 2026-09-26 Motor de la aplicación (Tkinter + SQLite): menú, módulos, actividades, evaluación, puntos, niveles e insignias; empaquetado con PyInstaller
+
+ EncartaEducativa.spec |   38 +
+ app.py                | 3116 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 3154 insertions(+)
+3337537 2026-09-25 Curso de mecanografía: 9 lecciones
+
+ contenido_mecanografia.py | 57 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
+6bc31e7 2026-09-22 Contenido de Tercero Básico
+
+ contenido_tercero.py | 712 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 712 insertions(+)
+c712ff0 2026-09-22 Contenido de Segundo Básico
+
+ contenido_segundo.py | 702 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 702 insertions(+)
+87b9fd0 2026-09-21 Contenido de Primero Básico: módulos, actividades y evaluaciones
+
+ contenido_primero.py | 883 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 883 insertions(+)
+3503cf5 2026-09-21 Agrega el temario de la aplicación por grado
+
+ .gitignore |   9 +++
+ TEMARIO.md | 268 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 277 insertions(+)
