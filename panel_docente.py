@@ -77,10 +77,15 @@ def eliminar_estudiante(est_id):
 
 
 def reiniciar_progreso(est_id):
+    """Deja al estudiante como nuevo (conserva solo su nombre y grado). Se borran también las actividades
+    completadas: si no, quedarían marcadas como hechas y el estudiante no podría volver a ganar esos puntos."""
     con = _conectar()
     try:
-        con.execute("UPDATE estudiantes SET puntos = 0 WHERE id = ?", (est_id,))
+        con.execute("UPDATE estudiantes SET puntos = 0, xp = 0, racha = 0, mejor_racha = 0, ultima_fecha = '', insignias = '' "
+                    "WHERE id = ?", (est_id,))
+        con.execute("DELETE FROM actividades_completadas WHERE estudiante_id = ?", (est_id,))
         con.execute("DELETE FROM progreso WHERE estudiante_id = ?", (est_id,))
+        con.execute("DELETE FROM retos_diarios WHERE estudiante_id = ?", (est_id,))
         con.commit()
     finally:
         con.close()
@@ -371,7 +376,8 @@ class PanelDocente:
         est_id = self._estudiante_seleccionado()
         if est_id is None:
             return
-        if not messagebox.askyesno("Confirmar", "¿Reiniciar el puntaje y el progreso de este estudiante?",
+        if not messagebox.askyesno("Confirmar", "¿Reiniciar el progreso de este estudiante? Se borrarán sus puntos, XP, racha, insignias, actividades y evaluaciones. "
+                                   "Se conservan su nombre y su grado.",
                                    parent=self.win):
             return
         reiniciar_progreso(est_id)
