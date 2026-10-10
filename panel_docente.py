@@ -11,6 +11,7 @@ dejar rastro de las acciones del docente.
 """
 import datetime
 import os
+import re
 import sqlite3
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
@@ -153,7 +154,9 @@ def generar_reporte_individual(est_id, ruta):
         r.parrafo("Sin evaluaciones realizadas todavía.")
     r.espacio(6)
     r.subtitulo("Insignias obtenidas")
-    r.parrafo(", ".join(d["insignias"]) if d["insignias"] else "Ninguna todavía.")
+    # los emoji del nombre de la insignia no existen en la fuente del PDF: se quitan para no imprimir «?»
+    limpias = [re.sub(r"^[^\wÁÉÍÓÚÜÑáéíóúüñ]+", "", n) for n in d["insignias"]]
+    r.parrafo(", ".join(limpias) if limpias else "Ninguna todavía.")
     r.pie_fecha()
     r.guardar(ruta)
 

@@ -2046,7 +2046,7 @@ class EncartaEducativaApp:
     def actividad_laberinto(self, actividad, parent_win, on_close_callback):
         win = tk.Toplevel(parent_win)
         win.title(actividad["titulo"])
-        win.geometry("420x480")
+        win.geometry("420x570")
         win.configure(bg=self.bg_color)
         win.grab_set()
 
